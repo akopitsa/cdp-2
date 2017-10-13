@@ -29,8 +29,8 @@
                 "echo '[main]' >> /etc/puppetlabs/puppet/puppet.conf\n",
                 "echo 'environment = production' >> /etc/puppetlabs/puppet/puppet.conf\n",
                 "echo 'runinterval = 2m' >> /etc/puppetlabs/puppet/puppet.conf\n",
-                "echo 'certname = '", {"Fn::GetAtt" : [ "PuppetAgentInstance", "PublicDnsName" ]}, "' >> /etc/puppetlabs/puppet/puppet.conf\n",
-                "echo 'server = '", {"Fn::GetAtt" : [ "PuppetAgentInstance", "PublicDnsName" ]}, "'  >> /etc/puppetlabs/puppet/puppet.conf\n"
+                "echo 'certname = ", {"Fn::GetAtt" : [ "PuppetAgentInstance", "PublicDnsName" ]}, "' >> /etc/puppetlabs/puppet/puppet.conf\n",
+                "echo 'server = ", {"Fn::GetAtt" : [ "PuppetAgentInstance", "PublicDnsName" ]}, "'  >> /etc/puppetlabs/puppet/puppet.conf\n"
               ]
             ]
           }
