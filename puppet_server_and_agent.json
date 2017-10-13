@@ -34,7 +34,7 @@
                 "systemctl start puppetserver\n",
                 "systemctl enable puppetserver\n",
                 "/opt/puppetlabs/bin/puppet module install puppetlabs-ntp --version 6.3.0\n",
-                "echo 'node default {include \"::ntp\"}' >> /etc/puppetlabs/puppet/puppet.conf\n"
+                "echo 'node default {include \"::ntp\"}' >> /etc/puppetlabs/code/environments/production/manifests/init.pp\n"
               ]
             ]
           }
