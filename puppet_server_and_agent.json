@@ -17,6 +17,24 @@
             "Value": "puppet-server"
           }
         ],
+        "UserData" : { "Fn::Base64" : { "Fn::Join" : ["", [
+                "#!/bin/bash \n",
+                "rpm -ivh https://yum.puppetlabs.com/puppetlabs-release-pc1-el-7.noarch.rpm \n",
+                "yum update \n",
+                "yum -y install puppetserver ntpdate mc \n",
+                "timedatectl set-timezone Europe/Kiev \n",
+                "ntpdate 0.ua.pool.ntp.org \n",
+                "echo 'dns_alt_names = #{$hostnamepuppetserver},server' >> /etc/puppetlabs/puppet/puppet.conf\n",
+                "echo 'autosign = true' >>  /etc/puppetlabs/puppet/puppet.conf\n",
+                "echo '[main]' >> /etc/puppetlabs/puppet/puppet.conf\n",
+                "echo 'environment = production' >> /etc/puppetlabs/puppet/puppet.conf\n",
+                "echo 'runinterval = 2m' >> /etc/puppetlabs/puppet/puppet.conf\n",
+                "echo 'certname = '", {"Fn::GetAtt" : [ "PuppetAgentInstance", "PublicDnsName" ]}, "' >> /etc/puppetlabs/puppet/puppet.conf\n",
+                "echo 'server = '", {"Fn::GetAtt" : [ "PuppetAgentInstance", "PublicDnsName" ]}, "'  >> /etc/puppetlabs/puppet/puppet.conf\n"
+              ]
+            ]
+          }
+        }
      }
    },
 
@@ -33,7 +51,7 @@
            "Key": "Name",
            "Value": "puppet-agent"
          }
-       ],
+       ]
     }
   },
 
