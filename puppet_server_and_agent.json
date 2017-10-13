@@ -26,8 +26,14 @@
                 "ntpdate 0.ua.pool.ntp.org \n",
                 "echo 'autosign = true' >>  /etc/puppetlabs/puppet/puppet.conf\n",
                 "echo '[main]' >> /etc/puppetlabs/puppet/puppet.conf\n",
+                "SERVERHOSTNAME=`/usr/bin/curl http://169.254.169.254/latest/meta-data/public-hostname`\n",
+                "echo \"certname =  $SERVERHOSTNAME\" >> /etc/puppetlabs/puppet/puppet.conf\n",
+                "echo \"server =  $SERVERHOSTNAME\" >> /etc/puppetlabs/puppet/puppet.conf\n",
                 "echo 'environment = production' >> /etc/puppetlabs/puppet/puppet.conf\n",
-                "echo 'runinterval = 2m' >> /etc/puppetlabs/puppet/puppet.conf\n"
+                "echo 'runinterval = 2m' >> /etc/puppetlabs/puppet/puppet.conf\n",
+                "systemctl start puppetserver\n",
+                "systemctl enable puppetserver\n",
+                "/opt/puppetlabs/bin/puppet module install puppetlabs-ntp --version 6.3.0\n"
               ]
             ]
           }
@@ -56,9 +62,9 @@
                 "yum -y install puppet-agent ntpdate mc \n",
                 "timedatectl set-timezone Europe/Kiev \n",
                 "ntpdate 0.ua.pool.ntp.org \n",
-                "AGENTHOSTNAME = curl http://169.254.169.254/latest/meta-data/public-hostname\n",
                 "echo '[main]' >> /etc/puppetlabs/puppet/puppet.conf\n",
-                "echo 'certname =  \"$AGENTHOSTNAME\" >> /etc/puppetlabs/puppet/puppet.conf'\n",
+                "AGENTHOSTNAME=`/usr/bin/curl http://169.254.169.254/latest/meta-data/public-hostname`\n",
+                "echo 'certname =  \"$AGENTHOSTNAME\"' >> /etc/puppetlabs/puppet/puppet.conf\n",
                 "echo 'environment = production' >> /etc/puppetlabs/puppet/puppet.conf\n",
                 "echo 'runinterval = 2m' >> /etc/puppetlabs/puppet/puppet.conf\n",
                 "echo 'server = ", {"Fn::GetAtt" : [ "PuppetServerInstance", "PublicDnsName" ]}, "'  >> /etc/puppetlabs/puppet/puppet.conf\n"
