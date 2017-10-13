@@ -68,7 +68,8 @@
                 "echo \"certname =  $AGENTHOSTNAME\" >> /etc/puppetlabs/puppet/puppet.conf\n",
                 "echo 'environment = production' >> /etc/puppetlabs/puppet/puppet.conf\n",
                 "echo 'runinterval = 2m' >> /etc/puppetlabs/puppet/puppet.conf\n",
-                "echo 'server = ", {"Fn::GetAtt" : [ "PuppetServerInstance", "PublicDnsName" ]}, "'  >> /etc/puppetlabs/puppet/puppet.conf\n"
+                "echo 'server = ", {"Fn::GetAtt" : [ "PuppetServerInstance", "PublicDnsName" ]}, "'  >> /etc/puppetlabs/puppet/puppet.conf\n",
+                "/opt/puppetlabs/bin/puppet resource service puppet ensure=running enable=true\n"
               ]
             ]
           }
