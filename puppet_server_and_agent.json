@@ -1,0 +1,91 @@
+{
+  "AWSTemplateFormatVersion" : "2010-09-09",
+  "Description" : "AWS CloudFormation Template for Installing PuppetServer and PuppetAgent with NTP-server which deployed via Puppet",
+
+  "Resources" : {
+    "PuppetServerInstance" : {
+      "Type" : "AWS::EC2::Instance",
+      "Properties" : {
+        "ImageId" : "ami-ae7bfdb8",
+        "KeyName" : "id_rsa",
+        "InstanceType" : "t2.micro",
+        "AvailabilityZone" : "us-east-1a",
+        "SecurityGroups" : [ {"Ref" : "PuppetSecurityGroup"} ],
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "puppet-server"
+          }
+        ],
+     }
+   },
+
+   "PuppetAgentInstance" : {
+     "Type" : "AWS::EC2::Instance",
+     "Properties" : {
+       "ImageId" : "ami-ae7bfdb8",
+       "KeyName" : "id_rsa",
+       "InstanceType" : "t2.micro",
+       "AvailabilityZone" : "us-east-1a",
+       "SecurityGroups" : [ {"Ref" : "PuppetSecurityGroup"} ],
+       "Tags": [
+         {
+           "Key": "Name",
+           "Value": "puppet-agent"
+         }
+       ],
+    }
+  },
+
+   "PuppetSecurityGroup" : {
+     "Type" : "AWS::EC2::SecurityGroup",
+     "Properties" : {
+       "GroupDescription" : "Enable HTTP access via port 80",
+       "SecurityGroupIngress" : [
+         {"IpProtocol" : "tcp", "FromPort" : "22", "ToPort" : "22", "CidrIp" : "0.0.0.0/0"}
+       ]
+     }
+   }
+ },
+  "Outputs" : {
+    "PuppetAgentInstanceId" : {
+      "Description" : "Puppet Agent Instance of the newly created EC2 instance",
+      "Value" : { "Ref" : "PuppetAgentInstance" }
+    },
+    "PuppetAgentInstanceId" : {
+      "Description" : "Puppet Agent Instance of the newly created EC2 instance",
+      "Value" : { "Ref" : "PuppetServerInstance" }
+    },
+    "PuppetAgentPublicDNS" : {
+      "Description" : "Public DNSName of the newly created Puppet Agent instance",
+      "Value" : { "Fn::GetAtt" : [ "PuppetAgentInstance", "PublicDnsName" ] }
+    },
+    "PuppetAgentPublicIP" : {
+      "Description" : "Public IP address of the newly created Puppet Agent instance",
+      "Value" : { "Fn::GetAtt" : [ "PuppetAgentInstance", "PublicIp" ] }
+    },
+    "PuppetServerInstanceId" : {
+      "Description" : "Puppet Agent Instance of the newly created Puppet Server instance",
+      "Value" : { "Ref" : "PuppetServerInstance" }
+    },
+    "PuppetServerInstanceId" : {
+      "Description" : "Puppet Agent Instance of the newly created Puppet Server instance",
+      "Value" : { "Ref" : "PuppetServerInstance" }
+    },
+    "PuppetServerPublicDNS" : {
+      "Description" : "Public DNSName of the newly created Puppet Server instance",
+      "Value" : { "Fn::GetAtt" : [ "PuppetServerInstance", "PublicDnsName" ] }
+    },
+    "PuppetServerPublicIP" : {
+      "Description" : "Public IP address of the newly created Puppet Server instance",
+      "Value" : { "Fn::GetAtt" : [ "PuppetServerInstance", "PublicIp" ] }
+    }
+  }
+}
+
+
+# ami-ae7bfdb8
+# ami-9cbf9bf9
+
+# elsevier
+# els-dops
