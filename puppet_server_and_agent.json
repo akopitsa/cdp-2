@@ -21,9 +21,21 @@
                 "#!/bin/bash \n",
                 "rpm -ivh https://yum.puppetlabs.com/puppetlabs-release-pc1-el-7.noarch.rpm \n",
                 "yum update \n",
-                "yum -y install puppetserver ntpdate mc \n",
+                "dd if=/dev/zero of=/swapfile bs=1M count=2560 \n",
+                "chown root:root  /swapfile \n",
+                "chmod 600 /swapfile \n",
+                "mkswap /swapfile \n",
+                "swapon /swapfile \n",
+                "echo \"/swapfile   swap    swap    sw  0   0\" >> /etc/fstab \n",
+                "echo \"vm.swappiness = 100\" >> /etc/sysctl.conf \n",
+                "echo \"vm.vfs_cache_pressure = 50\" >> /etc/sysctl.conf \n",
+                "sysctl -p \n",
+                "yum -y install epel-release \n",
+                "yum -y install puppetserver git nginx tree ntpdate mc \n",
+                "systemctl start nginx.service \n",
                 "timedatectl set-timezone Europe/Kiev \n",
                 "ntpdate 0.ua.pool.ntp.org \n",
+                "sed -i -e 's/JAVA_ARGS=\"-Xms2g -Xmx2g -XX:MaxPermSize=256m\"/JAVA_ARGS=\"-Xms512m -Xmx512m\"/' \"/etc/sysconfig/puppetserver\" \n",
                 "echo 'autosign = true' >>  /etc/puppetlabs/puppet/puppet.conf\n",
                 "echo '[main]' >> /etc/puppetlabs/puppet/puppet.conf\n",
                 "SERVERHOSTNAME=`/usr/bin/curl http://169.254.169.254/latest/meta-data/public-hostname`\n",
@@ -31,10 +43,27 @@
                 "echo \"server =  $SERVERHOSTNAME\" >> /etc/puppetlabs/puppet/puppet.conf\n",
                 "echo 'environment = production' >> /etc/puppetlabs/puppet/puppet.conf\n",
                 "echo 'runinterval = 2m' >> /etc/puppetlabs/puppet/puppet.conf\n",
+                "cat /dev/null > /etc/puppetlabs/puppet/hiera.yaml \n",
+                "echo ':backends:' >> /etc/puppetlabs/puppet/hiera.yaml \n",
+                "echo '  - yaml' >> /etc/puppetlabs/puppet/hiera.yaml \n",
+                "echo ':hierarchy:' >> /etc/puppetlabs/puppet/hiera.yaml \n",
+                "echo \"  - 'nodes/%{::trusted.certname}'\" >> /etc/puppetlabs/puppet/hiera.yaml \n",
+                "echo \"  - 'nodes/%{::fqdn}'\" >> /etc/puppetlabs/puppet/hiera.yaml \n",
+                "echo '  - common' >> /etc/puppetlabs/puppet/hiera.yaml \n",
+                "echo ':yaml:' >> /etc/puppetlabs/puppet/hiera.yaml \n",
+                "echo \"  :datadir: '/etc/puppetlabs/code/environments/%{::environment}/hieradata'\" >> /etc/puppetlabs/puppet/hiera.yaml \n",
+                "/opt/puppetlabs/puppet/bin/gem install r10k \n",
+                "echo \":cachedir: '/var/cache/r10k'\" >> /etc/puppetlabs/puppet/r10k.yaml \n",
+                "echo ':sources:' >> /etc/puppetlabs/puppet/r10k.yaml \n",
+                "echo '  cdp:' >> /etc/puppetlabs/puppet/r10k.yaml \n",
+                "echo \"    remote: 'https://github.com/akopitsa/cdp-control-repo.git'\" >> /etc/puppetlabs/puppet/r10k.yaml \n",
+                "echo \"    basedir: '/etc/puppetlabs/code/environments'\" >> /etc/puppetlabs/puppet/r10k.yaml \n",
+                "echo '    prefix: false' >> /etc/puppetlabs/puppet/r10k.yaml \n",
+                "/opt/puppetlabs/puppet/bin/r10k deploy environment production -pv -c /etc/puppetlabs/puppet/r10k.yaml \n",
+                "/opt/puppetlabs/puppet/bin/r10k deploy environment development -pv -c /etc/puppetlabs/puppet/r10k.yaml \n",
+                "free && sync && echo 3 > /proc/sys/vm/drop_caches && free \n",
                 "systemctl start puppetserver\n",
-                "systemctl enable puppetserver\n",
-                "/opt/puppetlabs/bin/puppet module install puppetlabs-ntp --version 6.3.0\n",
-                "echo 'node default {include \"::ntp\"}' >> /etc/puppetlabs/code/environments/production/manifests/init.pp\n"
+                "systemctl enable puppetserver\n"
               ]
             ]
           }
@@ -60,7 +89,7 @@
                 "#!/bin/bash \n",
                 "rpm -ivh https://yum.puppetlabs.com/puppetlabs-release-pc1-el-7.noarch.rpm \n",
                 "yum update \n",
-                "yum -y install puppet-agent ntpdate mc \n",
+                "yum -y install puppet-agent git tree mc \n",
                 "timedatectl set-timezone Europe/Kiev \n",
                 "ntpdate 0.ua.pool.ntp.org \n",
                 "echo '[main]' >> /etc/puppetlabs/puppet/puppet.conf\n",
@@ -69,7 +98,7 @@
                 "echo 'environment = production' >> /etc/puppetlabs/puppet/puppet.conf\n",
                 "echo 'runinterval = 2m' >> /etc/puppetlabs/puppet/puppet.conf\n",
                 "echo 'server = ", {"Fn::GetAtt" : [ "PuppetServerInstance", "PublicDnsName" ]}, "'  >> /etc/puppetlabs/puppet/puppet.conf\n",
-                "/opt/puppetlabs/bin/puppet resource service puppet ensure=running enable=true\n"
+                "/opt/puppetlabs/bin/puppet resource service puppet ensure=running enable=true"
               ]
             ]
           }
@@ -82,7 +111,8 @@
      "Properties" : {
        "GroupDescription" : "Enable HTTP access via port 80",
        "SecurityGroupIngress" : [
-         {"IpProtocol" : "tcp", "FromPort" : "22", "ToPort" : "22", "CidrIp" : "0.0.0.0/0"}
+         {"IpProtocol" : "tcp", "FromPort" : "22", "ToPort" : "22", "CidrIp" : "0.0.0.0/0"},
+         {"IpProtocol" : "tcp", "FromPort" : "8140", "ToPort" : "8140", "CidrIp" : "0.0.0.0/0"}
        ]
      }
    }

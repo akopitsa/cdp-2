@@ -1,0 +1,190 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  AWS CloudFormation Template for Installing PuppetServer and PuppetAgent with
+  NTP-server which deployed via Puppet
+Resources:
+  PuppetServerInstance:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      ImageId: ami-ae7bfdb8
+      KeyName: id_rsa
+      InstanceType: t2.micro
+      AvailabilityZone: us-east-1a
+      SecurityGroups:
+        - !Ref PuppetSecurityGroup
+      Tags:
+        - Key: Name
+          Value: puppet-server
+      UserData: !Base64
+        'Fn::Join':
+          - ''
+          - - |
+              #!/bin/bash
+            - >
+              rpm -ivh
+              https://yum.puppetlabs.com/puppetlabs-release-pc1-el-7.noarch.rpm
+            - |
+              yum update
+            - |
+              dd if=/dev/zero of=/swapfile bs=1M count=2560
+            - |
+              chown root:root  /swapfile
+            - |
+              chmod 600 /swapfile
+            - |
+              mkswap /swapfile
+            - |
+              swapon /swapfile
+            - |
+              echo "/swapfile   swap    swap    sw  0   0" >> /etc/fstab
+            - |
+              echo "vm.swappiness = 100" >> /etc/sysctl.conf
+            - |
+              echo "vm.vfs_cache_pressure = 50" >> /etc/sysctl.conf
+            - |
+              sysctl -p
+            - |
+              yum -y install epel-release
+            - |
+              yum -y install puppetserver git nginx tree ntpdate mc
+            - |
+              systemctl start nginx.service
+            - |
+              timedatectl set-timezone Europe/Kiev
+            - |
+              ntpdate 0.ua.pool.ntp.org
+            - >
+              sed -i -e 's/JAVA_ARGS="-Xms2g -Xmx2g
+              -XX:MaxPermSize=256m"/JAVA_ARGS="-Xms512m -Xmx512m"/'
+              "/etc/sysconfig/puppetserver"
+            - |
+              echo 'autosign = true' >>  /etc/puppetlabs/puppet/puppet.conf
+            - |
+              echo '[main]' >> /etc/puppetlabs/puppet/puppet.conf
+            - >
+              SERVERHOSTNAME=`/usr/bin/curl
+              http://169.254.169.254/latest/meta-data/public-hostname`
+            - >
+              echo "certname =  $SERVERHOSTNAME" >>
+              /etc/puppetlabs/puppet/puppet.conf
+            - >
+              echo "server =  $SERVERHOSTNAME" >>
+              /etc/puppetlabs/puppet/puppet.conf
+            - >
+              echo 'environment = production' >>
+              /etc/puppetlabs/puppet/puppet.conf
+            - |
+              echo 'runinterval = 2m' >> /etc/puppetlabs/puppet/puppet.conf
+            - |
+            - |
+              echo """:backends:
+              - yaml
+            :hierarchy:
+              - "nodes/%{::trusted.certname}"
+              - "nodes/%{::fqdn}"
+              - common
+
+            :yaml:
+            # datadir is empty here, so hiera uses its defaults:
+            # - /etc/puppetlabs/code/environments/%{environment}/hieradata on *nix
+            # When specifying a datadir, make sure the directory exists.
+              :datadir: '/etc/puppetlabs/code/environments/%{::environment}/hieradata'
+            """ > /etc/puppetlabs/puppet/hiera.yaml
+            - |
+              systemctl start puppetserver
+            - |
+              systemctl enable puppetserver
+            - |
+              /opt/puppetlabs/puppet/bin/gem install r10k
+            - >
+              /opt/puppetlabs/bin/puppet module install puppetlabs-ntp --version
+              6.3.0
+            - >
+              echo 'node default {include "::ntp"}' >>
+              /etc/puppetlabs/code/environments/production/manifests/init.pp
+  PuppetAgentInstance:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      ImageId: ami-ae7bfdb8
+      KeyName: id_rsa
+      InstanceType: t2.micro
+      AvailabilityZone: us-east-1a
+      SecurityGroups:
+        - !Ref PuppetSecurityGroup
+      Tags:
+        - Key: Name
+          Value: puppet-agent
+      UserData: !Base64
+        'Fn::Join':
+          - ''
+          - - |
+              #!/bin/bash
+            - >
+              rpm -ivh
+              https://yum.puppetlabs.com/puppetlabs-release-pc1-el-7.noarch.rpm
+            - |
+              yum update
+            - |
+              yum -y install puppet-agent git tree mc
+            - |
+              timedatectl set-timezone Europe/Kiev
+            - |
+              ntpdate 0.ua.pool.ntp.org
+            - |
+              echo '[main]' >> /etc/puppetlabs/puppet/puppet.conf
+            - >
+              AGENTHOSTNAME=`/usr/bin/curl
+              http://169.254.169.254/latest/meta-data/public-hostname`
+            - >
+              echo "certname =  $AGENTHOSTNAME" >>
+              /etc/puppetlabs/puppet/puppet.conf
+            - >
+              echo 'environment = production' >>
+              /etc/puppetlabs/puppet/puppet.conf
+            - |
+              echo 'runinterval = 2m' >> /etc/puppetlabs/puppet/puppet.conf
+            - 'echo ''server = '
+            - !GetAtt
+              - PuppetServerInstance
+              - PublicDnsName
+            - |
+              '  >> /etc/puppetlabs/puppet/puppet.conf
+            - >-
+              /opt/puppetlabs/bin/puppet resource service puppet ensure=running
+              enable=true
+  PuppetSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: Enable HTTP access via port 80
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: 0.0.0.0/0
+Outputs:
+  PuppetAgentInstanceId:
+    Description: Puppet Agent Instance of the newly created EC2 instance
+    Value: !Ref PuppetServerInstance
+  PuppetAgentPublicDNS:
+    Description: Public DNSName of the newly created Puppet Agent instance
+    Value: !GetAtt
+      - PuppetAgentInstance
+      - PublicDnsName
+  PuppetAgentPublicIP:
+    Description: Public IP address of the newly created Puppet Agent instance
+    Value: !GetAtt
+      - PuppetAgentInstance
+      - PublicIp
+  PuppetServerInstanceId:
+    Description: Puppet Agent Instance of the newly created Puppet Server instance
+    Value: !Ref PuppetServerInstance
+  PuppetServerPublicDNS:
+    Description: Public DNSName of the newly created Puppet Server instance
+    Value: !GetAtt
+      - PuppetServerInstance
+      - PublicDnsName
+  PuppetServerPublicIP:
+    Description: Public IP address of the newly created Puppet Server instance
+    Value: !GetAtt
+      - PuppetServerInstance
+      - PublicIp
